@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2024-06-02 16:46:44">
+<sys_script action="INSERT_OR_UPDATE">
+<abort_action>false</abort_action>
+<access>package_private</access>
+<action_delete>false</action_delete>
+<action_insert>true</action_insert>
+<action_query>false</action_query>
+<action_update>false</action_update>
+<active>true</active>
+<add_message>false</add_message>
+<advanced>true</advanced>
+<change_fields>false</change_fields>
+<client_callable>false</client_callable>
+<collection>sys_attachment</collection>
+<condition/>
+<description/>
+<execute_function>false</execute_function>
+<filter_condition table="sys_attachment">table_nameSTARTSWITHincident^EQ<item goto="false" or="false" field="table_name" endquery="false" value="incident" operator="STARTSWITH" newquery="false"/>
+<item goto="false" or="false" field="" endquery="true" value="" operator="=" newquery="false"/>
+</filter_condition>
+<is_rest>false</is_rest>
+<message/>
+<name>[SnowDungeon-AI]Check Attachment</name>
+<order>100</order>
+<priority>100</priority>
+<rest_method display_value=""/>
+<rest_method_text/>
+<rest_service display_value=""/>
+<rest_service_text/>
+<rest_variables/>
+<role_conditions/>
+<script><![CDATA[(function executeRule(current, previous /*null when async*/ ) {
+
+    // Initialize variables
+    var attachmentContent = "";
+    var StringUtil = new GlideStringUtil();
+    var attachments = new GlideSysAttachment();
+    var gR = new GlideRecord('sys_attachment');
+
+    // Attempt to retrieve the attachment
+    try {
+        gR.get(current.getUniqueValue()); // Replace with your attachment Sys ID
+		gR.query();
+        if (gR.next()) {
+            var binData = attachments.getBytes(gR);
+            attachmentContent = StringUtil.base64Encode(binData);
+        } else {
+            gs.error("Attachment not found.");
+            return; // Exit if no attachment is found
+        }
+    } catch (ex) {
+        gs.error("Error retrieving attachment: " + ex.getMessage());
+        return; // Exit in case of error
+    }
+
+    // Assuming 'attachmentContent' now contains your base64-encoded image data
+    var base64Image = attachmentContent;
+
+    // Prepare the RESTMessageV2 for the external API call
+    var restMessage = new sn_ws.RESTMessageV2();
+    restMessage.setEndpoint("https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large");
+    restMessage.setHttpMethod("POST");
+
+    // Set up headers
+    restMessage.setRequestHeader("Authorization", "Bearer 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");
+    restMessage.setRequestHeader("Content-Type", "application/json");
+
+    // Prepare the request body with the base64 image data
+    var requestBody = {
+        "inputs": base64Image
+    };
+    restMessage.setRequestBody(JSON.stringify(requestBody));
+
+    // Attempt to send the request and handle the response
+    try {
+        var response = restMessage.execute();
+        var responseBody = response.getBody();
+        var httpStatus = response.getStatusCode();
+
+        // Log the response for debugging
+        gs.info("Response: " + responseBody);
+        gs.info("HTTP Status: " + httpStatus);
+    } catch (ex) {
+        // Log the error if the request fails
+        gs.error("Error in sending request: " + ex.getMessage());
+    }
+
+    var updateInc = new GlideRecord("incident");
+    updateInc.get(current.table_sys_id.toString());
+    updateInc.query();
+    if (updateInc.next())
+        updateInc.description = JSON.parse(responseBody)[0]["generated_text"];
+    updateInc.update();
+
+})(current, previous);]]></script>
+<sys_class_name>sys_script</sys_class_name>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2024-06-01 16:41:49</sys_created_on>
+<sys_domain>global</sys_domain>
+<sys_domain_path>/</sys_domain_path>
+<sys_id>96237115c36202102039fdac050131a7</sys_id>
+<sys_mod_count>7</sys_mod_count>
+<sys_name>[SnowDungeon-AI]Check Attachment</sys_name>
+<sys_overrides display_value=""/>
+<sys_package display_value="Global" source="global">global</sys_package>
+<sys_policy/>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sys_script_96237115c36202102039fdac050131a7</sys_update_name>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2024-06-01 17:28:34</sys_updated_on>
+<template/>
+<when>after</when>
+</sys_script>
+</unload>
