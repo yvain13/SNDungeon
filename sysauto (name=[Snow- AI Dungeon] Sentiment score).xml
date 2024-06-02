@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2024-06-02 16:43:50">
+<sysauto_script action="INSERT_OR_UPDATE">
+<active>true</active>
+<business_calendar display_value=""/>
+<condition/>
+<conditional>false</conditional>
+<entered_time>1970-01-01 00:00:00</entered_time>
+<max_drift/>
+<name>[Snow- AI Dungeon] Sentiment score</name>
+<offset/>
+<offset_type>0</offset_type>
+<run_as display_value="System Administrator">6816f79cc0a8016401c5a33be04be441</run_as>
+<run_as_tz/>
+<run_dayofmonth>1</run_dayofmonth>
+<run_dayofweek>1</run_dayofweek>
+<run_period>1970-01-01 01:00:00</run_period>
+<run_start>2024-05-26 18:05:15</run_start>
+<run_time>1970-01-01 08:00:00</run_time>
+<run_type>periodically</run_type>
+<script><![CDATA[    // Define the function to make the REST API call
+    function query(data) {
+        // Create a new RESTMessageV2 object
+        var request = new sn_ws.RESTMessageV2();
+        
+        // Set the endpoint URL
+        request.setEndpoint("https://api-inference.huggingface.co/models/lxyuan/distilbert-base-multilingual-cased-sentiments-student");
+        
+        // Set the HTTP method to POST
+        request.setHttpMethod("POST");
+        
+        // Set the request headers
+        request.setRequestHeader("Authorization", "Bearer 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");
+        request.setRequestHeader("Content-Type", "application/json");
+        
+        // Set the request body
+        request.setRequestBody(JSON.stringify(data));
+        
+        // Execute the request and get the response
+        var response = request.execute();
+        
+        // Get the response body as a JSON object
+        var responseBody = response.getBody();
+        var responseJSON = JSON.parse(responseBody);
+        
+        return responseJSON;
+    }
+    
+
+
+
+
+var gr  = new GlideRecord("incident");
+gr.addEncodedQuery("u_sentiment_scoreNOT LIKEpositive");
+gr.setLimit(100);
+gr.query();
+while(gr.next()){
+    var result = query(gr.short_description.toString());
+    gs.info(JSON.stringify(result));
+    gr.u_sentiment_score = JSON.stringify(result);
+    gr.update();
+
+
+}
+]]></script>
+<sys_class_name>sysauto_script</sys_class_name>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2024-05-26 18:05:47</sys_created_on>
+<sys_id>fd1d8b9fc39a02102039fdac05013112</sys_id>
+<sys_mod_count>2</sys_mod_count>
+<sys_name>[Snow- AI Dungeon] Sentiment score</sys_name>
+<sys_package display_value="Global" source="global">global</sys_package>
+<sys_policy/>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sysauto_script_fd1d8b9fc39a02102039fdac05013112</sys_update_name>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2024-06-01 19:33:02</sys_updated_on>
+<time_zone/>
+<upgrade_safe>false</upgrade_safe>
+</sysauto_script>
+</unload>
